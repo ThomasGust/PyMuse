@@ -1,3 +1,4 @@
+from msilib import sequence
 import numpy as np
 import tensorflow as tf
 import os
@@ -99,6 +100,32 @@ class EuterpeModelRNN(tf.keras.Model):
         gradients = tape.gradient(loss, self.trainable_variables)
         self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
         return loss
+
+
+class EuterpeRNN:
+
+    def __init__(self):
+        self.model = None
+    
+    def train_euterpe_rnn(self, vectorized, vocab_size, embedding_dim, rnn_units, batch_size, learning_rate, epochs, steps_per_epoch, sequence_length, output_path, output_name):
+        self.model = EuterpeModelRNN(vocab_size=vocab_size, embedding_dim=embedding_dim, rnn_units=rnn_units)
+        self.model.optimizer = tf.keras.optimizers.Adam(learning_rate)
+
+        for epoch in range(epochs):
+            for step in range(steps_per_epoch):
+                xb, yb = self.model.get_batch(vectorized=vectorized, sequence_length=sequence_length, batch_size=batch_size)
+                self.model.train_step(xb, yb)
+                print(f"Completed step {step+1} of epoch {epoch+1}")
+            print()
+            print(f"Completed epoch {epoch}")
+        
+
+
+    def load_euterpe_rnn(self):
+        pass
+
+    def predict_euterpe_rnn(self):
+        pass
 
 class EuterpeModelLSTM(tf.keras.Model):
 
