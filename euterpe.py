@@ -49,24 +49,13 @@ class EuterpeModelLSTM(tf.keras.Model):
         x = self.l1(x)
         return self.o(x)
 
-    def get_loss(self, labels, logits):
-        loss = tf.keras.losses.sparse_categorical_crossentropy(labels, logits, from_logits=True)
-        return loss
-
     def get_batch(self, vectorized_songs, seq_length, batch_size):
-        # the length of the vectorized songs string
         n = len(vectorized_songs) - 1
-        # randomly choose the starting indices for the examples in the training batch
         idx = np.random.choice(n - seq_length, batch_size)
 
-        '''TODO: construct a list of input sequences for the training batch'''
         input_batch = [vectorized_songs[i: i + seq_length] for i in idx]
-        # input_batch = # TODO
-        '''TODO: construct a list of output sequences for the training batch'''
         output_batch = [vectorized_songs[i + 1: i + seq_length + 1] for i in idx]
-        # output_batch = # TODO
-
-        # x_batch, y_batch provide the true inputs and targets for network training
+        
         x_batch = np.reshape(input_batch, [batch_size, seq_length])
         y_batch = np.reshape(output_batch, [batch_size, seq_length])
         return x_batch, y_batch
