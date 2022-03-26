@@ -11,7 +11,7 @@ class EuterpeModelRNN(tf.keras.Model):
 class EuterpeModelLSTM(tf.keras.Model):
   
   def __init__(self):
-    super(EuterpeModelLSTM, self).__init()
+    super(EuterpeModelLSTM, self).__init__()
 
   def call(self, x):
     return x
@@ -19,7 +19,7 @@ class EuterpeModelLSTM(tf.keras.Model):
 class EuterpeModelAutoEncoder(tf.keras.Model):
 
   def __init__(self):
-    super(EuterpeModelAutoEncoder, self).__init()
+    super(EuterpeModelAutoEncoder, self).__init__()
 
   def call(self, x):
     return x
