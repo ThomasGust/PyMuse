@@ -31,12 +31,47 @@ def get_lstm_layer(rnnu, return_sequences=True, recurrent_initializer='glorot_un
 
 class EuterpeModelRNN(tf.keras.Model):
 
-    def __init__(self):
-        super(EuterpeModelRNN, self).__init__()
+    def __init__(self, vocab_size, embedding_dim, rnn_units):
+        super(EuterpeModelRNN, self).__init__(self)
+        self.embedding = tf.keras.layers.Embedding(vocab_size, embedding_dim)
+        self.gru = tf.keras.layers.GRU(rnn_units,
+                                    return_sequences=True,
+                                    return_state=True)
+        self.dense = tf.keras.layers.Dense(vocab_size)
 
-    def call(self, x):
-        return x
+    def call(self, inputs, states=None, return_state=False, training=False):
+        x = inputs
+        x = self.embedding(x, training=training)
+        if states is None:
+            states = self.gru.get_initial_state(x)
+        x, states = self.gru(x, initial_state=states, training=training)
+        x = self.dense(x, training=training)
 
+        if return_state:
+            return x, states
+        else:
+            return x
+    
+    def get_batch(self, vectorized, seq_length, batch_size):
+        n = len(vectorized) - 1
+        idx = np.random.choice(n - seq_length, batch_size)
+
+        input_batch = [vectorized[i: i + seq_length] for i in idx]
+        output_batch = [vectorized[i + 1: i + seq_length + 1] for i in idx]
+
+        x_batch = np.reshape(input_batch, [batch_size, seq_length])
+        y_batch = np.reshape(output_batch, [batch_size, seq_length])
+        return x_batch, y_batch
+
+    @tf.function
+    def train_step(self, x, y):
+        with tf.GradientTape() as tape:
+            yh = self(x)
+            loss = tf.keras.losses.sparse_categorical_crossentropy(y, yh, from_logits=True)
+
+        gradients = tape.gradient(loss, self.trainable_variables)
+        self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
+        return loss
 
 class EuterpeModelLSTM(tf.keras.Model):
 
@@ -51,12 +86,12 @@ class EuterpeModelLSTM(tf.keras.Model):
         x = self.l1(x)
         return self.o(x)
 
-    def get_batch(self, vectorized_songs, seq_length, batch_size):
-        n = len(vectorized_songs) - 1
+    def get_batch(self, vectorized, seq_length, batch_size):
+        n = len(vectorized) - 1
         idx = np.random.choice(n - seq_length, batch_size)
 
-        input_batch = [vectorized_songs[i: i + seq_length] for i in idx]
-        output_batch = [vectorized_songs[i + 1: i + seq_length + 1] for i in idx]
+        input_batch = [vectorized[i: i + seq_length] for i in idx]
+        output_batch = [vectorized[i + 1: i + seq_length + 1] for i in idx]
 
         x_batch = np.reshape(input_batch, [batch_size, seq_length])
         y_batch = np.reshape(output_batch, [batch_size, seq_length])
