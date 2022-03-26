@@ -55,7 +55,7 @@ class EuterpeModelLSTM(tf.keras.Model):
 
         input_batch = [vectorized_songs[i: i + seq_length] for i in idx]
         output_batch = [vectorized_songs[i + 1: i + seq_length + 1] for i in idx]
-        
+
         x_batch = np.reshape(input_batch, [batch_size, seq_length])
         y_batch = np.reshape(output_batch, [batch_size, seq_length])
         return x_batch, y_batch
@@ -89,7 +89,32 @@ class EuterpeLSTM:
             xb, yb = model.get_batch(vectorized, seq_length, batch_size)
             model.train_step(xb, yb)
         model.save_weights(output_path)
+    
+    @staticmethod
+    def load_euterpe_lstm_model(path, vocab_size, embedding_dim, rnn_units, batch_size=1):
+      model = EuterpeModelLSTM(vocab_size=vocab_size, embedding_dim=embedding_dim, rnn_units=rnn_units, batch_size=batch_size)
 
+      model.load_weights(path)
+      model.build(tf.TensorShape([1, None]))
+      return model
+    
+    @staticmethod
+    def predict_euterpe_lstm_model(model, start_string, generation_length, char2idx, idx2char):
+      input_eval = [char2idx[s] for s in start_string]
+      input_eval = tf.expand_dims(input_eval, 0)
+      text_generated = []
+      model.reset_states()
+
+      for i in range(generation_length):
+          predictions = model(input_eval)
+          
+          predictions = tf.squeeze(predictions, 0)
+          predicted_id = tf.random.categorical(predictions, num_samples=1)[-1,0].numpy()
+        
+          input_eval = tf.expand_dims([predicted_id], 0)
+          text_generated.append(idx2char[predicted_id])
+        
+      return (start_string + ''.join(text_generated))
 class EuterpeModelAutoEncoder(tf.keras.Model):
 
   def __init__(self):
