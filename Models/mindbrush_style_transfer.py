@@ -2,7 +2,7 @@ import os
 from abc import ABC
 from multiprocessing import Process
 import tensorflow as tf
-
+import time
 import numpy as np
 from img_utils import *
 
@@ -224,8 +224,6 @@ def VGG19StyleTransfer(content_image_tensor, style_image_tensor, content_layers=
         opt.apply_gradients([(grad, image)])
         image.assign(clip_0_1(image))
 
-    import time
-
     start = time.time()
 
     step = 0
@@ -328,7 +326,7 @@ def VGG16StyleTransfer(content_image_tensor, style_image_tensor, content_layers=
         opt.apply_gradients([(grad, image)])
         image.assign(clip_0_1(image))
 
-    import time
+    
 
     start = time.time()
 
