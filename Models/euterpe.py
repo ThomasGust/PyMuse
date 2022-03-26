@@ -58,9 +58,9 @@ class OneStep(tf.keras.Model):
 
 class EuterpeModelRNN(tf.keras.Model):
 
-    def __init__(self, vocab_size, embedding_dim, rnn_units):
+    def __init__(self, vocab_size, embedding_dim, rnn_units, batch_size):
         super(EuterpeModelRNN, self).__init__(self)
-        self.embedding = tf.keras.layers.Embedding(vocab_size, embedding_dim)
+        self.embedding = tf.keras.layers.Embedding(vocab_size, embedding_dim, input_batch_size=[batch_size, None])
         self.gru = tf.keras.layers.GRU(rnn_units,
                                     return_sequences=True,
                                     return_state=True)
@@ -107,7 +107,7 @@ class EuterpeRNN:
         self.model = None
     
     def train_euterpe_rnn(self, vectorized, vocab_size, embedding_dim, rnn_units, batch_size, learning_rate, epochs, steps_per_epoch, sequence_length, output_path, output_name):
-        self.model = EuterpeModelRNN(vocab_size=vocab_size, embedding_dim=embedding_dim, rnn_units=rnn_units)
+        self.model = EuterpeModelRNN(vocab_size=vocab_size, embedding_dim=embedding_dim, rnn_units=rnn_units, batch_size=batch_size)
         self.model.optimizer = tf.keras.optimizers.Adam(learning_rate)
 
         for epoch in range(epochs):
@@ -117,14 +117,48 @@ class EuterpeRNN:
                 print(f"Completed step {step+1} of epoch {epoch+1}")
             print()
             print(f"Completed epoch {epoch}")
+        out = os.path.join(output_path, output_name)
+        os.makedirs(out)
+        self.model.save_weights(out)
+
+        with open(os.path.join(out, "loadparams.config"), "wb") as f:
+            b = pkl.dumps([vocab_size, embedding_dim, rnn_units, batch_size])
+            pkl.dump(b, f)
+
+        with open(os.path.join(out, "in.config"), "wb") as f:
+            b = pkl.dumps([vectorized, output_path, output_name, steps_per_epoch, epoch, batch_size, sequence_length,
+                        learning_rate, embedding_dim, rnn_units])
+            pkl.dump(b, f)
         
+    def load_euterpe_rnn_model(self, path, config_path, vocab_size, embedding_dim, rnn_units, batch_size=1):
+        with open(os.path.join(config_path, "loadparams.config"), "rb") as f:
+            ps = pkl.load(f)
+            ps = pkl.loads(ps)
+            vocab_size = ps[0]
+            embedding_dim = ps[1]
+            rnn_units = ps[2]
 
+        self.model = EuterpeModelRNN(vocab_size=vocab_size, embedding_dim=embedding_dim, rnn_units=rnn_units,
+                                 batch_size=batch_size)
+        self.model.build(tf.TensorShape([1, None]))
+        self.model.load_weights(path)
+        return self.model
 
-    def load_euterpe_rnn(self):
-        pass
+    def predict_euterpe_lstm_model(self, start_string, generation_length, char2idx, idx2char):
+        input_eval = [char2idx[s] for s in start_string]
+        input_eval = tf.expand_dims(input_eval, 0)
+        text_generated = []
+        self.model.reset_states()
 
-    def predict_euterpe_rnn(self):
-        pass
+        for i in range(generation_length):
+            predictions = self.model(input_eval)
+
+            predictions = tf.squeeze(predictions, 0)
+            predicted_id = tf.random.categorical(predictions, num_samples=1)[-1, 0].numpy()
+
+            input_eval = tf.expand_dims([predicted_id], 0)
+            text_generated.append(idx2char[predicted_id])
+        return (start_string + ''.join(text_generated))
 
 class EuterpeModelLSTM(tf.keras.Model):
 
@@ -222,6 +256,7 @@ class EuterpeLSTM:
 
             input_eval = tf.expand_dims([predicted_id], 0)
             text_generated.append(idx2char[predicted_id])
+        return (start_string + ''.join(text_generated))
 
 class EuterpeModelAutoEncoder(tf.keras.Model):
 
