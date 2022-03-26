@@ -1,6 +1,7 @@
 import numpy as np
 import tensorflow as tf
-
+import os
+import pickle as pkl
 
 def get_vocab(joined_string):
     return sorted(set(joined_string))
@@ -70,36 +71,44 @@ class EuterpeModelLSTM(tf.keras.Model):
         self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
         return loss
 
+def train_euterpe_lstm_model(vectorized, vocab, output_path, output_name, num_training_iterations=2000, batch_size=4,
+                              seq_length=100, learning_rate=5e-3, embedding_dim=256, rnn_units=1024):
+    assert isinstance(vectorized, np.ndarray)
+    model = EuterpeModelLSTM(vocab_size=len(vocab), embedding_dim=embedding_dim, rnn_units=rnn_units,
+                              batch_size=batch_size)
+
+    model.optimizer = tf.keras.optimizers.Adam(learning_rate)
+
+    for _ in range(num_training_iterations):
+        xb, yb = model.get_batch(vectorized, seq_length, batch_size)
+        model.train_step(xb, yb)
+    
+    out = os.path.join(output_path, output_name)
+    os.mkdir(out)
+    model.save_weights(out)
+
+    with open(os.path.join(out, "loadparams.config"), "wb") as f:
+      b = pkl.dumps([len(vocab), embedding_dim, rnn_units, batch_size])
+      pkl.dump(b, f)
+    
+    with open(os.path.join(out, "in.config"), "wb") as f:
+      b = pkl.dumps([vectorized, vocab, output_path, output_name, num_training_iterations, batch_size, seq_length, learning_rate, embedding_dim, rnn_units])
+      pkl.dump(b, f)
 
 class EuterpeLSTM:
 
     def __init__(self):
         pass
-
-    @staticmethod
-    def train_euterpe_lstm_model(vectorized, vocab, output_path, num_training_iterations=2000, batch_size=4,
-                                 seq_length=100, learning_rate=5e-3, embedding_dim=256, rnn_units=1024):
-        assert isinstance(vectorized, np.ndarray)
-        model = EuterpeModelLSTM(vocab_size=len(vocab), embedding_dim=embedding_dim, rnn_units=rnn_units,
-                                 batch_size=batch_size)
-
-        model.optimizer = tf.keras.optimizers.Adam(learning_rate)
-
-        for iter in range(num_training_iterations):
-            xb, yb = model.get_batch(vectorized, seq_length, batch_size)
-            model.train_step(xb, yb)
-        model.save_weights(output_path)
     
-    @staticmethod
-    def load_euterpe_lstm_model(path, vocab_size, embedding_dim, rnn_units, batch_size=1):
+    def load_euterpe_lstm_model(self, path, vocab_size, embedding_dim, rnn_units, batch_size=1):
       model = EuterpeModelLSTM(vocab_size=vocab_size, embedding_dim=embedding_dim, rnn_units=rnn_units, batch_size=batch_size)
 
       model.load_weights(path)
       model.build(tf.TensorShape([1, None]))
       return model
     
-    @staticmethod
-    def predict_euterpe_lstm_model(model, start_string, generation_length, char2idx, idx2char):
+    
+    def predict_euterpe_lstm_model(self, model, start_string, generation_length, char2idx, idx2char):
       input_eval = [char2idx[s] for s in start_string]
       input_eval = tf.expand_dims(input_eval, 0)
       text_generated = []
