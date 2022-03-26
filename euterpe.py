@@ -3,6 +3,7 @@ import tensorflow as tf
 import os
 import pickle as pkl
 
+
 def get_vocab(joined_string):
     return sorted(set(joined_string))
 
@@ -71,59 +72,69 @@ class EuterpeModelLSTM(tf.keras.Model):
         self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
         return loss
 
-def train_euterpe_lstm_model(vectorized, vocab, output_path, output_name, num_training_iterations=2000, batch_size=4,
-                              seq_length=100, learning_rate=5e-3, embedding_dim=256, rnn_units=1024):
+
+def train_euterpe_lstm_model(vectorized, vocab, output_path, output_name, num_training_iterations=3000, batch_size=32,
+                             seq_length=100, learning_rate=5e-3, embedding_dim=256, rnn_units=1024):
     assert isinstance(vectorized, np.ndarray)
     model = EuterpeModelLSTM(vocab_size=len(vocab), embedding_dim=embedding_dim, rnn_units=rnn_units,
-                              batch_size=batch_size)
+                             batch_size=batch_size)
 
     model.optimizer = tf.keras.optimizers.Adam(learning_rate)
 
-    for _ in range(num_training_iterations):
+    for iter in range(num_training_iterations):
         xb, yb = model.get_batch(vectorized, seq_length, batch_size)
         model.train_step(xb, yb)
-    
+        print(f"Just finished train step: {iter}")
+
     out = os.path.join(output_path, output_name)
-    os.mkdir(out)
+    os.makedirs(out)
     model.save_weights(out)
 
     with open(os.path.join(out, "loadparams.config"), "wb") as f:
-      b = pkl.dumps([len(vocab), embedding_dim, rnn_units, batch_size])
-      pkl.dump(b, f)
-    
+        b = pkl.dumps([len(vocab), embedding_dim, rnn_units, batch_size])
+        pkl.dump(b, f)
+
     with open(os.path.join(out, "in.config"), "wb") as f:
-      b = pkl.dumps([vectorized, vocab, output_path, output_name, num_training_iterations, batch_size, seq_length, learning_rate, embedding_dim, rnn_units])
-      pkl.dump(b, f)
+        b = pkl.dumps([vectorized, vocab, output_path, output_name, num_training_iterations, batch_size, seq_length,
+                       learning_rate, embedding_dim, rnn_units])
+        pkl.dump(b, f)
+
 
 class EuterpeLSTM:
 
     def __init__(self):
-        pass
-    
-    def load_euterpe_lstm_model(self, path, vocab_size, embedding_dim, rnn_units, batch_size=1):
-      model = EuterpeModelLSTM(vocab_size=vocab_size, embedding_dim=embedding_dim, rnn_units=rnn_units, batch_size=batch_size)
+        self.model = None
 
-      model.load_weights(path)
-      model.build(tf.TensorShape([1, None]))
-      return model
-    
-    
+    def load_euterpe_lstm_model(self, path, config_path, vocab_size, embedding_dim, rnn_units, batch_size=1):
+        with open(os.path.join(config_path, "loadparams.config"), "rb") as f:
+            ps = pkl.load(f)
+            ps = pkl.loads(ps)
+            vocab_size = ps[0]
+            embedding_dim = ps[1]
+            rnn_units = ps[2]
+
+        model = EuterpeModelLSTM(vocab_size=vocab_size, embedding_dim=embedding_dim, rnn_units=rnn_units,
+                                 batch_size=batch_size)
+        model.build(tf.TensorShape([1, None]))
+        model.load_weights(path)
+        self.model = model
+        return model
+
     def predict_euterpe_lstm_model(self, model, start_string, generation_length, char2idx, idx2char):
-      input_eval = [char2idx[s] for s in start_string]
-      input_eval = tf.expand_dims(input_eval, 0)
-      text_generated = []
-      model.reset_states()
+        input_eval = [char2idx[s] for s in start_string]
+        input_eval = tf.expand_dims(input_eval, 0)
+        text_generated = []
+        model.reset_states()
 
-      for i in range(generation_length):
-          predictions = model(input_eval)
-          
-          predictions = tf.squeeze(predictions, 0)
-          predicted_id = tf.random.categorical(predictions, num_samples=1)[-1,0].numpy()
-        
-          input_eval = tf.expand_dims([predicted_id], 0)
-          text_generated.append(idx2char[predicted_id])
-        
-      return (start_string + ''.join(text_generated))
+        for i in range(generation_length):
+            predictions = model(input_eval)
+
+            predictions = tf.squeeze(predictions, 0)
+            predicted_id = tf.random.categorical(predictions, num_samples=1)[-1, 0].numpy()
+
+            input_eval = tf.expand_dims([predicted_id], 0)
+            text_generated.append(idx2char[predicted_id])
+
 class EuterpeModelAutoEncoder(tf.keras.Model):
 
   def __init__(self):
