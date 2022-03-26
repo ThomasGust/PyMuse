@@ -42,11 +42,11 @@ class EuterpeModelLSTM(tf.keras.Model):
     x = self.l1(x)
     return self.o(x)
   
-  def get_loss(labels, logits):
+  def get_loss(self, labels, logits):
     loss = tf.keras.losses.sparse_categorical_crossentropy(labels, logits, from_logits=True)
     return loss
 
-  def get_batch(vectorized, sequence_length, bs):
+  def get_batch(self, vectorized, sequence_length, bs):
     n = vectorized.shape[0] - 1
     randindx = np.random.choice(n-sequence_length, bs)
     
@@ -68,8 +68,21 @@ class EuterpeModelLSTM(tf.keras.Model):
     self.optimizer.apply_gradient(zip(gradients, self.trainable_variables))
     return loss
   
-  def train(self, lr):
-    self.optimizer = tf.keras.optimizers.Adam(lr)
+class EuterpeLSTM:
+  
+  def __init__(self):
+    pass
+
+  @staticmethod
+  def train_euterpe_lstm_model(vectorized, vocab, output_path, num_training_iterations = 2000, batch_size=4, seq_length = 100, learning_rate = 5e-3, embedding_dim=256, rnn_units=1024):
+    model = EuterpeModelLSTM(vocab_size=len(vocab), embedding_dim=embedding_dim, rnn_units=rnn_units, batch_size=batch_size)
+
+    model.optimizer = tf.keras.optimizers.Adam(learning_rate)
+
+    for iter in range(num_training_iterations):
+      xb, yb = model.get_batch(vectorized, seq_length, batch_size)
+      model.train_step(xb, yb)
+    model.save_weights(output_path)
 
 class EuterpeModelAutoEncoder(tf.keras.Model):
 
