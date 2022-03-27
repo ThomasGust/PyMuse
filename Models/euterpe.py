@@ -4,20 +4,6 @@ import tensorflow as tf
 import os
 import pickle as pkl
 
-
-def get_vocab(joined_string):
-    return sorted(set(joined_string))
-
-
-def vectorize_vocab(vocab):
-    return {u: i for i, u in enumerate(vocab)}, np.array(vocab)
-
-
-def vectorize_string(char2idx, string):
-    vectorized_output = np.array([char2idx[char] for char in string])
-    return vectorized_output
-
-
 def get_lstm_layer(rnnu, return_sequences=True, recurrent_initializer='glorot_uniform', recurrent_activation='sigmoid',
                    stateful=True):
     lstm = tf.keras.layers.LSTM(
