@@ -3,6 +3,18 @@ import numpy as np
 import os
 import pickle as pkl
 
+
+def get_lstm_layer(rnnu, return_sequences=True, recurrent_initializer='glorot_uniform', recurrent_activation='sigmoid',
+                   stateful=True):
+    lstm = tf.keras.layers.LSTM(
+        rnnu,
+        return_sequences=return_sequences,
+        recurrent_initializer=recurrent_initializer,
+        recurrent_activation=recurrent_activation,
+        stateful=stateful
+    )
+    return lstm
+
 class LSTMModel(tf.keras.Model):
 
     def __init__(self, vocab_size, embedding_dim=256, rnn_units=1024, batch_size=32):
