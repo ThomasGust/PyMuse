@@ -167,3 +167,13 @@ class LSTM:
         for i in range(n):
             self.predict_lstm_model(start_seed="X", generation_length=1000, format="wav", fp=os.path.join(output_directory, i+1))
         return output_directory
+    
+    def generate_midi_batch(self, n, output_directory):
+        if os.path.isdir(output_directory) is False:
+            os.makedirs(output_directory)
+        else:
+            pass
+        
+        for i in range(n):
+            self.predict_lstm_model(start_seed="X", generation_length=1000, format="wav", fp=os.path.join(output_directory, i+1))
+        return output_directory
