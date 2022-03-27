@@ -1,5 +1,6 @@
 import os
 from music21 import converter
+from midi2audio import FluidSynth
 
 def abc2wav(abc_file):
     path_to_tool = os.path.join('bin', 'abc2wav')
@@ -18,3 +19,7 @@ def abc2midipy(in_path, out_path=None):
     return s
   else:
     return s
+
+def midi2wav(in_path, out_path):
+  FluidSynth().midi_to_audio(in_path, f'{out_path}.wav')
+  return out_path

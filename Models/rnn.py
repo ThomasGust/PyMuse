@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 import pickle as pkl
 import os
-from sound_utils import abc2midipy
+from sound_utils import abc2midipy, midi2wav
 
 class GRURNNModel(tf.keras.Model):
 
@@ -133,6 +133,16 @@ class GRURNN:
         elif format == "midi" and fp is not None:
             with open("tmp.abc", "w") as f:
                 pkl.dump(abc, f)
-            o = abc2midipy("tmp.abc", f"{fp}.abc")
+            o = abc2midipy("tmp.abc", f"{fp}.mid")
             os.remove("tmp.abc")
             return o
+        elif format == "wav" and fp is None:
+            raise TypeError("Value: fp cannot be none to save in .wav format")
+        elif format == "wav" and fp is not None:
+            with open("tmp.abc", "w") as f:
+                pkl.dump(abc, f)
+            abc2midipy("tmp.abc", "tmp.mid")
+            os.remove("tmp.abc")
+            midi2wav("tmp.mid", f"{fp}.wav")
+            os.remove("tmp.mid")
+            return f"{fp}.wav"
