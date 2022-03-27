@@ -71,7 +71,6 @@ class Encoder(tf.keras.layers.Layer):
 class BahdanauAttention(tf.keras.layers.Layer):
   def __init__(self, units):
     super().__init__()
-    # For Eqn. (4), the  Bahdanau attention
     self.W1 = tf.keras.layers.Dense(units, use_bias=False)
     self.W2 = tf.keras.layers.Dense(units, use_bias=False)
 
