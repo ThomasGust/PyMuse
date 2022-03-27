@@ -4,6 +4,7 @@ import pickle as pkl
 import os
 from sound_utils import abc2midipy, midi2wav
 from music21 import ABCHand
+from text_utils import extract_song_snippet
 
 class GRURNNModel(tf.keras.Model):
 
@@ -118,6 +119,7 @@ class GRURNN:
             input_eval = tf.expand_dims([predicted_id], 0)
             text_generated.append(self.idx2char[predicted_id])
         abc = start_seed + ''.join(text_generated)
+        abc = extract_song_snippet(abc)[0]
         try:
             if format == "abc" and fp is None:
                 return abc

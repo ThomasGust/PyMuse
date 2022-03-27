@@ -3,6 +3,7 @@ import numpy as np
 import os
 import pickle as pkl
 from sound_utils import abc2midipy, midi2wav
+from text_utils import extract_song_snippet
 
 
 def get_lstm_layer(rnnu, return_sequences=True, recurrent_initializer='glorot_uniform', recurrent_activation='sigmoid',
@@ -119,6 +120,7 @@ class LSTM:
             input_eval = tf.expand_dims([predicted_id], 0)
             text_generated.append(self.idx2char[predicted_id])
         abc = start_seed + ''.join(text_generated)
+        abc = extract_song_snippet(abc)[0]
         try:
             if format == "abc" and fp is None:
                 return abc
