@@ -157,7 +157,7 @@ class EuterpeModelLSTM(tf.keras.Model):
 
     def __init__(self, vocab_size, embedding_dim=256, rnn_units=1024, batch_size=32):
         super(EuterpeModelLSTM, self).__init__()
-        self.embed = tf.keras.layers.Embedding(vocab_size, embedding_dim, batch_input_shape=[batch_size, None])
+        self.embed = tf.keras.layers.Embedding(vocab_size, embedding_dim, input_batch_size=[batch_size, None])
         self.l1 = get_lstm_layer(rnnu=rnn_units)
         self.o = tf.keras.layers.Dense(vocab_size)
 

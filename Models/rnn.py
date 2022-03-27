@@ -7,7 +7,7 @@ class GRURNNModel(tf.keras.Model):
 
     def __init__(self, vocab_size, embedding_dim, rnn_units, batch_size):
         super(GRURNNModel, self).__init__(self)
-        self.embedding = tf.keras.layers.Embedding(vocab_size, embedding_dim, input_batch_size=[batch_size, None])
+        self.embedding = tf.keras.layers.Embedding(vocab_size, embedding_dim, batch_input_shape=[batch_size, None])
         self.gru = tf.keras.layers.GRU(rnn_units,
                                        return_sequences=True,
                                        return_state=True)
@@ -52,11 +52,14 @@ class GRURNN:
 
     def __init__(self):
         self.model = None
+        self.char2idx = None
+        self.idx2char = None
 
-    def train_euterpe_rnn(self, vectorized, vocab_size, embedding_dim, rnn_units, batch_size, learning_rate, epochs,
+    def train_rnn(self, vectorized, vocab_size, embedding_dim, char2idx, idx2char, rnn_units, batch_size,
+                          learning_rate, epochs,
                           steps_per_epoch, sequence_length, output_path, output_name):
         self.model = GRURNNModel(vocab_size=vocab_size, embedding_dim=embedding_dim, rnn_units=rnn_units,
-                                     batch_size=batch_size)
+                                 batch_size=batch_size)
         self.model.optimizer = tf.keras.optimizers.Adam(learning_rate)
 
         for epoch in range(epochs):
@@ -66,13 +69,15 @@ class GRURNN:
                 self.model.train_step(xb, yb)
                 print(f"Completed step {step + 1} of epoch {epoch + 1}")
             print()
-            print(f"Completed epoch {epoch}")
+            print(f"Completed epoch {epoch + 1}")
         out = os.path.join(output_path, output_name)
         os.makedirs(out)
         self.model.save_weights(out)
+        self.char2idx = char2idx
+        self.idx2char = idx2char
 
         with open(os.path.join(out, "loadparams.config"), "wb") as f:
-            b = pkl.dumps([vocab_size, embedding_dim, rnn_units, batch_size])
+            b = pkl.dumps([vocab_size, embedding_dim, rnn_units, batch_size, char2idx, idx2char])
             pkl.dump(b, f)
 
         with open(os.path.join(out, "in.config"), "wb") as f:
@@ -80,16 +85,34 @@ class GRURNN:
                            learning_rate, embedding_dim, rnn_units])
             pkl.dump(b, f)
 
-    def load_euterpe_rnn_model(self, path, config_path, vocab_size, embedding_dim, rnn_units, batch_size=1):
+    def load_rnn_model(self, path, config_path, vocab_size, embedding_dim, rnn_units, batch_size=1):
         with open(os.path.join(config_path, "loadparams.config"), "rb") as f:
             ps = pkl.load(f)
             ps = pkl.loads(ps)
             vocab_size = ps[0]
             embedding_dim = ps[1]
             rnn_units = ps[2]
+            self.char2idx = ps[4]
+            self.idx2char = ps[5]
 
-        self.model = GRURNN(vocab_size=vocab_size, embedding_dim=embedding_dim, rnn_units=rnn_units,
-                                     batch_size=batch_size)
+        self.model = GRURNNModel(vocab_size=vocab_size, embedding_dim=embedding_dim, rnn_units=rnn_units,
+                                 batch_size=batch_size)
         self.model.build(tf.TensorShape([1, None]))
         self.model.load_weights(path)
         return self.model
+
+    def predict_rnn_model(self, start_seed, generation_length):
+        input_eval = [self.char2idx[s] for s in start_seed]
+        input_eval = tf.expand_dims(input_eval, 0)
+        text_generated = []
+        self.model.reset_states()
+
+        for i in range(generation_length):
+            predictions = self.model(input_eval)
+
+            predictions = tf.squeeze(predictions, 0)
+            predicted_id = tf.random.categorical(predictions, num_samples=1)[-1, 0].numpy()
+
+            input_eval = tf.expand_dims([predicted_id], 0)
+            text_generated.append(self.idx2char[predicted_id])
+        return start_seed + ''.join(text_generated)
