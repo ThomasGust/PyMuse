@@ -178,3 +178,49 @@ class TrainTranslator(tf.keras.Model):
       return self._tf_train_step(inputs)
     else:
       return self._train_step(inputs)
+
+  def _preprocess(self, input_text, target_text):
+    self.shape_checker(input_text, ('batch',))
+    self.shape_checker(target_text, ('batch',))
+
+    input_tokens = self.input_text_processor(input_text)
+    target_tokens = self.output_text_processor(target_text)
+    self.shape_checker(input_tokens, ('batch', 's'))
+    self.shape_checker(target_tokens, ('batch', 't'))
+
+    input_mask = input_tokens != 0
+    self.shape_checker(input_mask, ('batch', 's'))
+
+    target_mask = target_tokens != 0
+    self.shape_checker(target_mask, ('batch', 't'))
+
+    return input_tokens, input_mask, target_tokens, target_mask
+  
+  def _train_step(self, inputs):
+    input_text, target_text = inputs  
+
+    (input_tokens, input_mask,
+    target_tokens, target_mask) = self._preprocess(input_text, target_text)
+
+    max_target_length = tf.shape(target_tokens)[1]
+
+    with tf.GradientTape() as tape:
+      enc_output, enc_state = self.encoder(input_tokens)
+      self.shape_checker(enc_output, ('batch', 's', 'enc_units'))
+      self.shape_checker(enc_state, ('batch', 'enc_units'))
+
+      dec_state = enc_state
+      loss = tf.constant(0.0)
+
+      for t in tf.range(max_target_length-1):
+        new_tokens = target_tokens[:, t:t+2]
+        step_loss, dec_state = self._loop_step(new_tokens, input_mask,
+                                              enc_output, dec_state)
+        loss = loss + step_loss
+      average_loss = loss / tf.reduce_sum(tf.cast(target_mask, tf.float32))
+
+    variables = self.trainable_variables 
+    gradients = tape.gradient(average_loss, variables)
+    self.optimizer.apply_gradients(zip(gradients, variables))
+
+    return {'batch_loss': average_loss}
