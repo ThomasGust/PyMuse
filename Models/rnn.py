@@ -3,10 +3,10 @@ import numpy as np
 import pickle as pkl
 import os
 
-class GRURNN(tf.keras.Model):
+class GRURNNModel(tf.keras.Model):
 
     def __init__(self, vocab_size, embedding_dim, rnn_units, batch_size):
-        super(GRURNN, self).__init__(self)
+        super(GRURNNModel, self).__init__(self)
         self.embedding = tf.keras.layers.Embedding(vocab_size, embedding_dim, input_batch_size=[batch_size, None])
         self.gru = tf.keras.layers.GRU(rnn_units,
                                        return_sequences=True,
@@ -48,14 +48,14 @@ class GRURNN(tf.keras.Model):
         return loss
 
 
-class EuterpeRNN:
+class GRURNN:
 
     def __init__(self):
         self.model = None
 
     def train_euterpe_rnn(self, vectorized, vocab_size, embedding_dim, rnn_units, batch_size, learning_rate, epochs,
                           steps_per_epoch, sequence_length, output_path, output_name):
-        self.model = GRURNN(vocab_size=vocab_size, embedding_dim=embedding_dim, rnn_units=rnn_units,
+        self.model = GRURNNModel(vocab_size=vocab_size, embedding_dim=embedding_dim, rnn_units=rnn_units,
                                      batch_size=batch_size)
         self.model.optimizer = tf.keras.optimizers.Adam(learning_rate)
 
