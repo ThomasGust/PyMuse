@@ -3,6 +3,7 @@ import numpy as np
 import pickle as pkl
 import os
 from sound_utils import abc2midipy, midi2wav
+from music21 import ABCHand
 
 class GRURNNModel(tf.keras.Model):
 
@@ -117,36 +118,39 @@ class GRURNN:
             input_eval = tf.expand_dims([predicted_id], 0)
             text_generated.append(self.idx2char[predicted_id])
         abc = start_seed + ''.join(text_generated)
-
-        if format == "abc" and fp is None:
-            return abc
-        elif format == "midi" and fp is None:
-            with open("tmp.abc", "w") as f:
-                f.flush()
-                f.write(abc)
-            o = abc2midipy("tmp.abc")
-            os.remove("tmp.abc")
-            return o
-        elif format == "abc" and fp is not None:
-            with open(f"{fp}.abc", "w") as f:
-                f.flush()
-                f.write(abc)
-            return abc
-        elif format == "midi" and fp is not None:
-            with open("tmp.abc", "w") as f:
-                f.flush()
-                f.write(abc)
-            o = abc2midipy("tmp.abc", fp)
-            os.remove("tmp.abc")
-            return o
-        elif format == "wav" and fp is None:
-            raise TypeError("Value: fp cannot be none to save in .wav format")
-        elif format == "wav" and fp is not None:
-            with open("tmp.abc", "w") as f:
-                f.flush()
-                f.write(abc)
-            abc2midipy("tmp.abc", "tmp")
-            os.remove("tmp.abc")
-            midi2wav("tmp.mid", f"{fp}.wav")
-            os.remove("tmp.mid")
-            return f"{fp}.wav"
+        try:
+            if format == "abc" and fp is None:
+                return abc
+            elif format == "midi" and fp is None:
+                with open("tmp.abc", "w") as f:
+                    f.flush()
+                    f.write(abc)
+                o = abc2midipy("tmp.abc")
+                os.remove("tmp.abc")
+                return o
+            elif format == "abc" and fp is not None:
+                with open(f"{fp}.abc", "w") as f:
+                    f.flush()
+                    f.write(abc)
+                return abc
+            elif format == "midi" and fp is not None:
+                with open("tmp.abc", "w") as f:
+                    f.flush()
+                    f.write(abc)
+                o = abc2midipy("tmp.abc", fp)
+                os.remove("tmp.abc")
+                return o
+            elif format == "wav" and fp is None:
+                raise TypeError("Value: fp cannot be none to save in .wav format")
+            elif format == "wav" and fp is not None:
+                with open("tmp.abc", "w") as f:
+                    f.flush()
+                    f.write(abc)
+                abc2midipy("tmp.abc", "tmp")
+                os.remove("tmp.abc")
+                midi2wav("tmp.mid", f"{fp}.wav")
+                os.remove("tmp.mid")
+                return f"{fp}.wav"
+        except Exception as e:
+            print(e)
+            self.predict_rnn_model(start_seed=start_seed, generation_length=generation_length, format=format, fp=fp)
