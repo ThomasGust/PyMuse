@@ -2,6 +2,7 @@ import tensorflow as tf
 import numpy as np
 import os
 import pickle as pkl
+from sound_utils import abc2midipy
 
 
 def get_lstm_layer(rnnu, return_sequences=True, recurrent_initializer='glorot_uniform', recurrent_activation='sigmoid',
@@ -103,7 +104,7 @@ class LSTM:
         self.model.load_weights(path)
         return self.model
 
-    def predict_lstm_model(self, start_seed, generation_length):
+    def predict_lstm_model(self, start_seed, generation_length, format='abc', fp=None):
         input_eval = [self.char2idx[s] for s in start_seed]
         input_eval = tf.expand_dims(input_eval, 0)
         text_generated = []
@@ -117,4 +118,23 @@ class LSTM:
 
             input_eval = tf.expand_dims([predicted_id], 0)
             text_generated.append(self.idx2char[predicted_id])
-        return start_seed + ''.join(text_generated)
+        abc = start_seed + ''.join(text_generated)
+
+        if format == "abc" and fp is None:
+            return abc
+        elif format == "midi" and fp is None:
+            with open("tmp.abc", "w") as f:
+                pkl.dump(abc, f)
+            o = abc2midipy("tmp.abc")
+            os.remove("tmp.abc")
+            return o
+        elif format == "abc" and fp is not None:
+            with open(f"{fp}.abc", "w") as f:
+                pkl.dump(abc, f)
+            return abc
+        elif format == "midi" and fp is not None:
+            with open("tmp.abc", "w") as f:
+                pkl.dump(abc, f)
+            o = abc2midipy("tmp.abc", f"{fp}.abc")
+            os.remove("tmp.abc")
+            return o

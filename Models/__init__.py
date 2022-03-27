@@ -6,4 +6,4 @@ from Models.euterpe import EuterpeLSTM
 from Models.mindbrush_style_transfer import VGG19StyleTransfer
 from Models.mindbrush_style_transfer import StyleContentModelVGG19
 from Models.mindbrush_style_transfer import VGG16StyleTransfer
-from Models.mindbrush_style_transfer import StyleContentModelVGG19
+from Models.mindbrush_style_transfer import StyleContentModelVGG16
