@@ -1,3 +1,4 @@
+from abc import ABC
 import numpy as np
 import tensorflow as tf
 import os
@@ -28,33 +29,35 @@ def get_lstm_layer(rnnu, return_sequences=True, recurrent_initializer='glorot_un
     )
     return lstm
 
+
 class OneStep(tf.keras.Model):
-  def __init__(self, model, chars_from_ids, ids_from_chars, temperature=1.0):
-    super().__init__()
-    self.temperature = temperature
-    self.model = model
-    self.chars_from_ids = chars_from_ids
-    self.ids_from_chars = ids_from_chars
+    def __init__(self, model, chars_from_ids, ids_from_chars, temperature=1.0):
+        super().__init__()
+        self.temperature = temperature
+        self.model = model
+        self.chars_from_ids = chars_from_ids
+        self.ids_from_chars = ids_from_chars
 
-    skip_ids = self.ids_from_chars(['[UNK]'])[:, None]
-    sparse_mask = tf.SparseTensor(
-        values=[-float('inf')]*len(skip_ids),
-        indices=skip_ids,
-        dense_shape=[len(ids_from_chars.get_vocabulary())])
-    self.prediction_mask = tf.sparse.to_dense(sparse_mask)
+        skip_ids = self.ids_from_chars(['[UNK]'])[:, None]
+        sparse_mask = tf.SparseTensor(
+            values=[-float('inf')] * len(skip_ids),
+            indices=skip_ids,
+            dense_shape=[len(ids_from_chars.get_vocabulary())])
+        self.prediction_mask = tf.sparse.to_dense(sparse_mask)
 
-  @tf.function
-  def generate_one_step(self, inputs, states=None):
-    input_chars = tf.strings.unicode_split(inputs, 'UTF-8')
-    input_ids = self.ids_from_chars(input_chars).to_tensor()
-    predicted_logits, states = self.model(inputs=input_ids, states=states, return_state=True)
-    predicted_logits = predicted_logits[:, -1, :]
-    predicted_logits = predicted_logits/self.temperature
-    predicted_logits = predicted_logits + self.prediction_mask
-    predicted_ids = tf.random.categorical(predicted_logits, num_samples=1)
-    predicted_ids = tf.squeeze(predicted_ids, axis=-1)
-    predicted_chars = self.chars_from_ids(predicted_ids)
-    return predicted_chars, states
+    @tf.function
+    def generate_one_step(self, inputs, states=None):
+        input_chars = tf.strings.unicode_split(inputs, 'UTF-8')
+        input_ids = self.ids_from_chars(input_chars).to_tensor()
+        predicted_logits, states = self.model(inputs=input_ids, states=states, return_state=True)
+        predicted_logits = predicted_logits[:, -1, :]
+        predicted_logits = predicted_logits / self.temperature
+        predicted_logits = predicted_logits + self.prediction_mask
+        predicted_ids = tf.random.categorical(predicted_logits, num_samples=1)
+        predicted_ids = tf.squeeze(predicted_ids, axis=-1)
+        predicted_chars = self.chars_from_ids(predicted_ids)
+        return predicted_chars, states
+
 
 class EuterpeModelRNN(tf.keras.Model):
 
@@ -62,8 +65,8 @@ class EuterpeModelRNN(tf.keras.Model):
         super(EuterpeModelRNN, self).__init__(self)
         self.embedding = tf.keras.layers.Embedding(vocab_size, embedding_dim, input_batch_size=[batch_size, None])
         self.gru = tf.keras.layers.GRU(rnn_units,
-                                    return_sequences=True,
-                                    return_state=True)
+                                       return_sequences=True,
+                                       return_state=True)
         self.dense = tf.keras.layers.Dense(vocab_size)
 
     def call(self, inputs, states=None, return_state=False, training=False):
@@ -78,7 +81,7 @@ class EuterpeModelRNN(tf.keras.Model):
             return x, states
         else:
             return x
-    
+
     def get_batch(self, vectorized, seq_length, batch_size):
         n = len(vectorized) - 1
         idx = np.random.choice(n - seq_length, batch_size)
@@ -105,16 +108,19 @@ class EuterpeRNN:
 
     def __init__(self):
         self.model = None
-    
-    def train_euterpe_rnn(self, vectorized, vocab_size, embedding_dim, rnn_units, batch_size, learning_rate, epochs, steps_per_epoch, sequence_length, output_path, output_name):
-        self.model = EuterpeModelRNN(vocab_size=vocab_size, embedding_dim=embedding_dim, rnn_units=rnn_units, batch_size=batch_size)
+
+    def train_euterpe_rnn(self, vectorized, vocab_size, embedding_dim, rnn_units, batch_size, learning_rate, epochs,
+                          steps_per_epoch, sequence_length, output_path, output_name):
+        self.model = EuterpeModelRNN(vocab_size=vocab_size, embedding_dim=embedding_dim, rnn_units=rnn_units,
+                                     batch_size=batch_size)
         self.model.optimizer = tf.keras.optimizers.Adam(learning_rate)
 
         for epoch in range(epochs):
             for step in range(steps_per_epoch):
-                xb, yb = self.model.get_batch(vectorized=vectorized, sequence_length=sequence_length, batch_size=batch_size)
+                xb, yb = self.model.get_batch(vectorized=vectorized, seq_length=sequence_length,
+                                              batch_size=batch_size)
                 self.model.train_step(xb, yb)
-                print(f"Completed step {step+1} of epoch {epoch+1}")
+                print(f"Completed step {step + 1} of epoch {epoch + 1}")
             print()
             print(f"Completed epoch {epoch}")
         out = os.path.join(output_path, output_name)
@@ -126,10 +132,10 @@ class EuterpeRNN:
             pkl.dump(b, f)
 
         with open(os.path.join(out, "in.config"), "wb") as f:
-            b = pkl.dumps([vectorized, output_path, output_name, steps_per_epoch, epoch, batch_size, sequence_length,
-                        learning_rate, embedding_dim, rnn_units])
+            b = pkl.dumps([vectorized, output_path, output_name, steps_per_epoch, epochs, batch_size, sequence_length,
+                           learning_rate, embedding_dim, rnn_units])
             pkl.dump(b, f)
-        
+
     def load_euterpe_rnn_model(self, path, config_path, vocab_size, embedding_dim, rnn_units, batch_size=1):
         with open(os.path.join(config_path, "loadparams.config"), "rb") as f:
             ps = pkl.load(f)
@@ -139,7 +145,7 @@ class EuterpeRNN:
             rnn_units = ps[2]
 
         self.model = EuterpeModelRNN(vocab_size=vocab_size, embedding_dim=embedding_dim, rnn_units=rnn_units,
-                                 batch_size=batch_size)
+                                     batch_size=batch_size)
         self.model.build(tf.TensorShape([1, None]))
         self.model.load_weights(path)
         return self.model
@@ -159,6 +165,7 @@ class EuterpeRNN:
             input_eval = tf.expand_dims([predicted_id], 0)
             text_generated.append(idx2char[predicted_id])
         return (start_string + ''.join(text_generated))
+
 
 class EuterpeModelLSTM(tf.keras.Model):
 
@@ -241,8 +248,9 @@ class EuterpeLSTM:
         model.load_weights(path)
         self.model = model
         return model
-
-    def predict_euterpe_lstm_model(self, model, start_string, generation_length, char2idx, idx2char):
+    
+    @staticmethod
+    def predict_euterpe_lstm_model(model, start_string, generation_length, char2idx, idx2char):
         input_eval = [char2idx[s] for s in start_string]
         input_eval = tf.expand_dims(input_eval, 0)
         text_generated = []
@@ -256,20 +264,22 @@ class EuterpeLSTM:
 
             input_eval = tf.expand_dims([predicted_id], 0)
             text_generated.append(idx2char[predicted_id])
-        return (start_string + ''.join(text_generated))
+        return start_string + ''.join(text_generated)
 
-class EuterpeModelAutoEncoder(tf.keras.Model):
 
-  def __init__(self):
-    super(EuterpeModelAutoEncoder, self).__init__()
+class EuterpeModelAutoEncoder(tf.keras.Model, ABC):
 
-  def call(self, x):
-    return x
-  
-class EuterpeModelTransformer(tf.keras.Model):
+    def __init__(self):
+        super(EuterpeModelAutoEncoder, self).__init__()
 
-  def __init__(self):
-    super(EuterpeModelTransformer, self).__init__()
+    def call(self, x):
+        return x
 
-  def call(self, x):
-    pass
+
+class EuterpeModelTransformer(tf.keras.Model, ABC):
+
+    def __init__(self):
+        super(EuterpeModelTransformer, self).__init__()
+
+    def call(self, x):
+        pass
