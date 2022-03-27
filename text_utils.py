@@ -32,3 +32,16 @@ def save_song_to_abc(song, filename="tmp"):
     with open(save_name, "w") as f:
         f.write(song)
     return filename
+
+def clean_abc(in_path, out_path):
+    file1 = open(in_path,
+                'r')
+
+    file2 = open(out_path,
+                'w')
+    for line in file1.readlines():
+        if not (line.startswith('%')) and not (line.startswith("Z")) and not (line.startswith("N")):
+            print(line)
+            file2.write(line)
+    file2.close()
+    file1.close()
