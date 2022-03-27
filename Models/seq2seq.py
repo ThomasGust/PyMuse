@@ -2,6 +2,8 @@ import tensorflow as tf
 from tensorflow import ShapeChecker
 import typing
 from typing import Any, Tuple
+
+
 class ShapeChecker():
   def __init__(self):
     self.shapes = {}
@@ -32,7 +34,6 @@ class ShapeChecker():
         continue
 
       if old_dim is None:
-        # If the axis name is new, add its length to the cache.
         self.shapes[name] = new_dim
         continue
 
