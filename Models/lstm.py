@@ -50,49 +50,71 @@ class LSTMModel(tf.keras.Model):
         return loss
 
 
-def train_euterpe_lstm_model(vectorized, vocab, output_path, output_name, num_training_iterations=3000, batch_size=32,
-                             seq_length=100, learning_rate=5e-3, embedding_dim=256, rnn_units=1024):
-    assert isinstance(vectorized, np.ndarray)
-    model = LSTMModel(vocab_size=len(vocab), embedding_dim=embedding_dim, rnn_units=rnn_units,
-                             batch_size=batch_size)
-
-    model.optimizer = tf.keras.optimizers.Adam(learning_rate)
-
-    for iter in range(num_training_iterations):
-        xb, yb = model.get_batch(vectorized, seq_length, batch_size)
-        model.train_step(xb, yb)
-        print(f"Just finished train step: {iter}")
-
-    out = os.path.join(output_path, output_name)
-    os.makedirs(out)
-    model.save_weights(out)
-
-    with open(os.path.join(out, "loadparams.config"), "wb") as f:
-        b = pkl.dumps([len(vocab), embedding_dim, rnn_units, batch_size])
-        pkl.dump(b, f)
-
-    with open(os.path.join(out, "in.config"), "wb") as f:
-        b = pkl.dumps([vectorized, vocab, output_path, output_name, num_training_iterations, batch_size, seq_length,
-                       learning_rate, embedding_dim, rnn_units])
-        pkl.dump(b, f)
-
-
 class LSTM:
 
     def __init__(self):
         self.model = None
+        self.char2idx = None
+        self.idx2char = None
 
-    def load_euterpe_lstm_model(self, path, config_path, vocab_size, embedding_dim, rnn_units, batch_size=1):
+    def train_lstm(self, vectorized, vocab_size, embedding_dim, char2idx, idx2char, rnn_units, batch_size,
+                          learning_rate, epochs,
+                          steps_per_epoch, sequence_length, output_path, output_name):
+        self.model = LSTMModel(vocab_size=vocab_size, embedding_dim=embedding_dim, rnn_units=rnn_units,
+                                 batch_size=batch_size)
+        self.model.optimizer = tf.keras.optimizers.Adam(learning_rate)
+
+        for epoch in range(epochs):
+            for step in range(steps_per_epoch):
+                xb, yb = self.model.get_batch(vectorized=vectorized, seq_length=sequence_length,
+                                              batch_size=batch_size)
+                self.model.train_step(xb, yb)
+                print(f"Completed step {step + 1} of epoch {epoch + 1}")
+            print()
+            print(f"Completed epoch {epoch + 1}")
+        out = os.path.join(output_path, output_name)
+        os.makedirs(out)
+        self.model.save_weights(out)
+        self.char2idx = char2idx
+        self.idx2char = idx2char
+
+        with open(os.path.join(out, "loadparams.config"), "wb") as f:
+            b = pkl.dumps([vocab_size, embedding_dim, rnn_units, batch_size, char2idx, idx2char])
+            pkl.dump(b, f)
+
+        with open(os.path.join(out, "in.config"), "wb") as f:
+            b = pkl.dumps([vectorized, output_path, output_name, steps_per_epoch, epochs, batch_size, sequence_length,
+                           learning_rate, embedding_dim, rnn_units])
+            pkl.dump(b, f)
+
+    def load_lstm_model(self, path, config_path, vocab_size, embedding_dim, rnn_units, batch_size=1):
         with open(os.path.join(config_path, "loadparams.config"), "rb") as f:
             ps = pkl.load(f)
             ps = pkl.loads(ps)
             vocab_size = ps[0]
             embedding_dim = ps[1]
             rnn_units = ps[2]
+            self.char2idx = ps[4]
+            self.idx2char = ps[5]
 
-        model = LSTMModel(vocab_size=vocab_size, embedding_dim=embedding_dim, rnn_units=rnn_units,
+        self.model = LSTMModel(vocab_size=vocab_size, embedding_dim=embedding_dim, rnn_units=rnn_units,
                                  batch_size=batch_size)
-        model.build(tf.TensorShape([1, None]))
-        model.load_weights(path)
-        self.model = model
-        return model
+        self.model.build(tf.TensorShape([1, None]))
+        self.model.load_weights(path)
+        return self.model
+
+    def predict_lstm_model(self, start_seed, generation_length):
+        input_eval = [self.char2idx[s] for s in start_seed]
+        input_eval = tf.expand_dims(input_eval, 0)
+        text_generated = []
+        self.model.reset_states()
+
+        for i in range(generation_length):
+            predictions = self.model(input_eval)
+
+            predictions = tf.squeeze(predictions, 0)
+            predicted_id = tf.random.categorical(predictions, num_samples=1)[-1, 0].numpy()
+
+            input_eval = tf.expand_dims([predicted_id], 0)
+            text_generated.append(self.idx2char[predicted_id])
+        return start_seed + ''.join(text_generated)
