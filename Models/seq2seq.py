@@ -153,13 +153,12 @@ class MaskedLoss(tf.keras.losses.Loss):
 
     return tf.reduce_sum(loss)
 
-class TrainTranslator(tf.keras.Model):
+class TrainModel(tf.keras.Model):
   def __init__(self, embedding_dim, units,
                input_text_processor,
                output_text_processor, 
                use_tf_function=True):
     super().__init__()
-    # Build the encoder and decoder
     encoder = Encoder(input_text_processor.vocabulary_size(),
                       embedding_dim, units)
     decoder = Decoder(output_text_processor.vocabulary_size(),
@@ -224,3 +223,20 @@ class TrainTranslator(tf.keras.Model):
     self.optimizer.apply_gradients(zip(gradients, variables))
 
     return {'batch_loss': average_loss}
+
+  def _loop_step(self, new_tokens, input_mask, enc_output, dec_state):
+    input_token, target_token = new_tokens[:, 0:1], new_tokens[:, 1:2]
+    decoder_input = DecoderInput(new_tokens=input_token,
+                                enc_output=enc_output,
+                                mask=input_mask)
+
+    dec_result, dec_state = self.decoder(decoder_input, state=dec_state)
+    self.shape_checker(dec_result.logits, ('batch', 't1', 'logits'))
+    self.shape_checker(dec_result.attention_weights, ('batch', 't1', 's'))
+    self.shape_checker(dec_state, ('batch', 'dec_units'))
+
+    y = target_token
+    y_pred = dec_result.logits
+    step_loss = self.loss(y, y_pred)
+
+    return step_loss, dec_state
