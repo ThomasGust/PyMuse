@@ -124,26 +124,30 @@ class LSTM:
             return abc
         elif format == "midi" and fp is None:
             with open("tmp.abc", "w") as f:
-                pkl.dump(abc, f)
+                f.flush()
+                f.write(abc)
             o = abc2midipy("tmp.abc")
             os.remove("tmp.abc")
             return o
         elif format == "abc" and fp is not None:
             with open(f"{fp}.abc", "w") as f:
-                pkl.dump(abc, f)
+                f.flush()
+                f.write(abc)
             return abc
         elif format == "midi" and fp is not None:
             with open("tmp.abc", "w") as f:
-                pkl.dump(abc, f)
-            o = abc2midipy("tmp.abc", f"{fp}.mid")
+                f.flush()
+                f.write(abc)
+            o = abc2midipy("tmp.abc", fp)
             os.remove("tmp.abc")
             return o
         elif format == "wav" and fp is None:
             raise TypeError("Value: fp cannot be none to save in .wav format")
         elif format == "wav" and fp is not None:
             with open("tmp.abc", "w") as f:
-                pkl.dump(abc, f)
-            abc2midipy("tmp.abc", "tmp.mid")
+                f.flush()
+                f.write(abc)
+            abc2midipy("tmp.abc", "tmp")
             os.remove("tmp.abc")
             midi2wav("tmp.mid", f"{fp}.wav")
             os.remove("tmp.mid")
