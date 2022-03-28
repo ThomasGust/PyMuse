@@ -155,6 +155,10 @@ class ABCGRURNN:
                 return f"{fp}.wav"
         except Exception as e:
             print(e)
+            if os.path.isfile("tmp.abc"):
+                os.remove("tmp.abc")
+            if os.path.isfile("tmp.mid"):
+                os.remove("tmp.mid")
             self.predict_rnn_model(start_seed=start_seed, generation_length=generation_length, format=format, fp=fp)
 
     def generate_wav_batch(self, n, output_directory):
