@@ -1,6 +1,7 @@
 import tensorflow as tf
 import typing
 from typing import Any, Tuple
+from Layers import ShapeChecker
 
 class Encoder(tf.keras.layers.Layer):
   def __init__(self, input_vocab_size, embedding_dim, enc_units):
