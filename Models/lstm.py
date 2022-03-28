@@ -183,3 +183,8 @@ class MidiLSTM:
 
     def __init__(self):
         pass
+
+class WavLSTM:
+
+    def __init__(self):
+        pass

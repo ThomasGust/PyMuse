@@ -182,3 +182,8 @@ class MidiRNN:
 
     def __init__(self):
         pass
+
+class WavRNN:
+
+    def __init__(self):
+        pass
