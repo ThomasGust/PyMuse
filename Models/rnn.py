@@ -185,8 +185,9 @@ class ABCGRURNN:
 class MidiRNN:
 
     def __init__(self):
-        pass
-
+        self.model = None
+        self.char2idx = None
+        self.idx2char = None
 class WavRNN:
 
     def __init__(self):
