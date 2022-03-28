@@ -186,9 +186,43 @@ class ABCLSTM:
 class MidiLSTM:
 
     def __init__(self):
-        pass
+        self.model = None
+        self.char2idx = None
+        self.idx2char = None
+    
+    def train(self):
+      pass
+    
+    def predict(self):
+      pass
+    
+    def load(self):
+      pass
+    
+    def generate_wav_batch(self):
+      pass
+    
+    def generate_midi_batch(self):
+      pass
 
 class WavLSTM:
 
     def __init__(self):
-        pass
+        self.model = None
+        self.char2idx = None
+        self.idx2char = None
+    
+    def train(self):
+      pass
+    
+    def load(self):
+      pass
+    
+    def predict(self):
+      pass
+    
+    def generate_wav_batch(self):
+      pass
+    
+    def generate_midi_batch(self):
+      pass
