@@ -3,6 +3,6 @@ PyMuse is a python tool to create music and art with the help of artificial inte
 
 
 ## Train LSTM
-```
-import tensorflow as tf
+```python
+from Models.lstm import ABCLSTM
 ```
