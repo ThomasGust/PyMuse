@@ -51,7 +51,7 @@ class GRURNNModel(tf.keras.Model):
         return loss
 
 
-class GRURNN:
+class ABCGRURNN:
 
     def __init__(self):
         self.model = None

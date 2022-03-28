@@ -52,7 +52,7 @@ class LSTMModel(tf.keras.Model):
         return loss
 
 
-class LSTM:
+class ABCLSTM:
 
     def __init__(self):
         self.model = None
