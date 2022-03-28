@@ -1,5 +1,4 @@
 import tensorflow as tf
-from tensorflow import ShapeChecker
 import typing
 from typing import Any, Tuple
 
