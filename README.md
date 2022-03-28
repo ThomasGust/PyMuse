@@ -16,3 +16,13 @@ PyMuse is a python tool to create music and art with the help of artificial inte
   ```python
   from Models.seq2seq import ABCSEQ2SEQ
   ```
+  
+  ## Infer with ABCLSTM
+  ```python
+  from models.lstm import ABCLSTM
+  ```
+  
+  ## Infer with ABCGRURNN
+  ```python
+  from models.rnn import ABCGRURNN
+  ```
