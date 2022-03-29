@@ -1,1 +1,7 @@
 #! /bin/bash
+
+path_to_content_image = $1
+path_to_style_image = $2
+path_to_output = $3
+
+python put_the_path_to_the_file_here
