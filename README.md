@@ -47,6 +47,10 @@ PyMuse is a python tool to create music and art with the help of artificial inte
   ```python
   from models.lstm import ABCLSTM
   # Will fill out all of the docs and readme stuff later
+  model = ABCLSTM()
+  model.load_lstm_model(path="path\\to\\file", config_path="path\\to\\file", rnn_units=1024,
+                      embedding_dim=256, vocab_size=len(vocab))
+  preds = model.predict_lstm_model(start_seed="X", generation_length=1000, format="midi", fp="out1")
   ```
   
   ## Infer with ABCGRURNN
