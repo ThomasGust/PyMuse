@@ -3,5 +3,6 @@
 path_to_content_image = $1
 path_to_style_image = $2
 path_to_output = $3
+max_dim = $4
 
-python put_the_path_to_the_file_here
+python put_the_path_to_the_file_here $path_to_content_image $path_to_style_image $path_to_output $max_dim
